@@ -29,17 +29,17 @@ my_scara = scara.Scara(origin_point)
 
 my_scara.add_base()
 my_scara.add_joint()
-my_scara.add_link(length = 80, start_angle = 55)
+my_scara.add_link(length = 80, start_angle = 30)
 my_scara.add_joint()
-my_scara.add_link(length = 80, start_angle = 267)
+my_scara.add_link(length = 80, start_angle = 120)
 my_scara.add_joint()
-my_scara.add_link(length = 40, start_angle = 10)
+my_scara.add_link(length = 40, start_angle = 200)
 
-my_scara.add_joint()
-my_scara.add_link(length = 120, start_angle = 30)
+# my_scara.add_joint()
+# my_scara.add_link(length = 120, start_angle = 30)
 
-my_scara.add_joint()
-my_scara.add_link(length = 80, start_angle = 170)
+# my_scara.add_joint()
+# my_scara.add_link(length = 80, start_angle = 170)
 
 for link in my_scara.links:
     link.add_angle_arc()
@@ -75,7 +75,8 @@ for link in my_scara.links:
 # link1_start_x = joint1.x
 # link1_start_y = joint1.y
 # link1_len = 80
-# link1_angle = 0
+link1_angle = 0
+link2_angle = 0
 # link1 = pyglet.shapes.Line(link1_start_x, link1_start_y,
 #                            link1_start_x + link1_len * math.cos(math.radians(link1_angle)),
 #                            link1_start_y + link1_len * math.sin(math.radians(link1_angle)),
@@ -121,25 +122,32 @@ for link in my_scara.links:
 
 def update_link1(dt):
     global link1_angle
+    global link2_angle
 
     # Update the end point of the line based on the new angle
-    link1_angle += 50 * dt
-    rad = math.radians(link1_angle)
+    link1_angle += 30 * dt
+    link2_angle += 90 * dt
 
-    # link1.rotation = -link1_angle
+    my_scara.joints[0].rotate(link1_angle)
+    my_scara.joints[1].rotate(link2_angle)
 
-    link1.x2 = link1_start_x + link1_len * math.cos(rad)
-    link1.y2 = link1_start_y + link1_len * math.sin(rad)
 
-    arc1_angle_value = link1_angle % 360
-    link1_arc.angle = math.radians(arc1_angle_value)
-    link1_arc_label.text = angle_value_format.format(arc1_angle_value)
+    # rad = math.radians(link1_angle)
 
-    joint2.x = link1.x2
-    joint2.y = link1.y2
+    # # link1.rotation = -link1_angle
 
-    link2.x = joint2.x
-    link2.y = joint2.y
+    # link1.x2 = link1_start_x + link1_len * math.cos(rad)
+    # link1.y2 = link1_start_y + link1_len * math.sin(rad)
+
+    # arc1_angle_value = link1_angle % 360
+    # link1_arc.angle = math.radians(arc1_angle_value)
+    # link1_arc_label.text = angle_value_format.format(arc1_angle_value)
+
+    # joint2.x = link1.x2
+    # joint2.y = link1.y2
+
+    # link2.x = joint2.x
+    # link2.y = joint2.y
 
 @window.event
 def on_draw():
@@ -150,5 +158,5 @@ def on_draw():
     
 
 
-#pyglet.clock.schedule_interval(update_link1, 1 / 60.0)  # Update at 60 FPS
+pyglet.clock.schedule_interval(update_link1, 1 / 60.0)  # Update at 60 FPS
 pyglet.app.run()
