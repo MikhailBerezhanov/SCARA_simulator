@@ -32,14 +32,31 @@ class Joint:
         if self.link:
             self.link.move(x, y)
 
+class Gripper(Joint):
+    def __init__(self, start_point_x, start_point_y, batch):
+        super().__init__(start_point_x, start_point_y, batch)
+
+        self.shape = pyglet.shapes.Arc(
+            start_point_x, start_point_y, 
+            self.JOINT_RADIUS + 2, 
+            segments=None, 
+            angle=math.radians(360), 
+            start_angle=0, 
+            closed=False, 
+            color=(255, 255, 255, 255), 
+            batch=batch)
+
+    def rotate(self):
+        pass
+
 class Link:
-    LINK_WIDTH = 2
+    LINK_WIDTH = 3
     ANGLE_ARC_RADIUS = 28
     ANGLE_VALUE_FMT = "{:.0f}"
     ANGLE_VALUE_OFFSET_X = 10
     ANGLE_VALUE_OFFSET_Y = -8
 
-    def __init__(self, start_joint, end_joint, batch, length, start_angle):
+    def __init__(self, start_joint, end_joint, batch, length, start_angle, color):
         self.angle_arc = None
         self.angle_arc_label = None
         self.angle = start_angle
@@ -54,7 +71,7 @@ class Link:
             start_joint.shape.x, start_joint.shape.y,
             start_joint.shape.x + length * math.cos(math.radians(start_angle)),
             start_joint.shape.y + length * math.sin(math.radians(start_angle)),
-            width=self.LINK_WIDTH, color=(120, 110, 50), batch=batch)
+            width=self.LINK_WIDTH, color=color, batch=batch)
 
         self.start_joint.connect_link(self)
 
@@ -137,7 +154,7 @@ class ScaraModel:
         self.base = pyglet.shapes.Rectangle(
             base_x, base_y, 
             self.BASE_LEN, self.BASE_LEN, 
-            color=(123, 255, 120), batch=self.batch)
+            color=(120, 120, 120), batch=self.batch)
 
         joint = Joint(base_point[0], base_point[1], self.batch)
         self.joints.append(joint)
@@ -160,7 +177,10 @@ class ScaraModel:
         if not self.joints:
             raise Exception("Add link failed - no joints available")
 
-        link = Link(self.joints[-1], None, self.batch, length, start_angle)
+        c = 20 * len(self.joints)
+        color = (11 * c % 255, 123 * c % 255, 47 * c % 255)
+
+        link = Link(self.joints[-1], None, self.batch, length, start_angle, color)
 
         self.links.append(link)
 
@@ -171,8 +191,10 @@ class ScaraModel:
         start_x = self.links[-1].line.x2
         start_y = self.links[-1].line.y2
 
-        self.gripper = pyglet.shapes.Box(
-            start_x - self.GRIPPER_SIDE // 2 , start_y - self.GRIPPER_SIDE // 2, 
-            self.GRIPPER_SIDE, self.GRIPPER_SIDE, 
-            thickness=1, color=(255, 255, 255, 255), batch=self.batch)
+        self.gripper = Gripper(start_x, start_y, self.batch)
 
+        self.links[-1].end_joint = self.gripper
+
+# TODO:
+class ScaraController:
+    pass
