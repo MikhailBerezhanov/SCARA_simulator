@@ -15,19 +15,11 @@ axes.create_x_axis(x_axis_length)
 y_axis_length = 200
 axes.create_y_axis(y_axis_length)
 
-
-origin_point = axes.get_origin()
-
-origin_point_x = origin_point[0]
-origin_point_y = origin_point[1]
-
-
 # SCARA nodel:
 # Base - Joint1 - Link1 - Joint2 - Link2 - Gripper
-my_scara = scara.ScaraModel(origin_point)
+my_scara = scara.ScaraModel()
 
-my_scara.add_base()
-my_scara.add_joint()
+my_scara.add_base(axes.get_origin())
 my_scara.add_link(length = 80, start_angle = 30)
 my_scara.add_joint()
 my_scara.add_link(length = 80, start_angle = 120)
@@ -36,11 +28,6 @@ my_scara.add_link(length = 40, start_angle = 200)
 
 my_scara.add_gripper()
 
-# my_scara.add_joint()
-# my_scara.add_link(length = 120, start_angle = 30)
-
-# my_scara.add_joint()
-# my_scara.add_link(length = 80, start_angle = 170)
 
 for link in my_scara.links:
     link.add_angle_arc()

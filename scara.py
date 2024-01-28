@@ -1,6 +1,7 @@
 import pyglet
 import math
 
+# Chained classes:
 # Joint -> Link
 # Link (->) Joint 
 
@@ -119,13 +120,9 @@ class ScaraModel:
     BASE_LEN = 20
     GRIPPER_SIDE = 10
 
-    def __init__(self, origin_point=(0, 0)):
+    def __init__(self):
         self.batch = pyglet.graphics.Batch()
-
-        self.base_x = origin_point[0] - self.BASE_LEN // 2
-        self.base_y = origin_point[1] - self.BASE_LEN // 2
         self.base = None 
-
         self.joints = []
         self.links = []
         self.gripper = None
@@ -133,22 +130,24 @@ class ScaraModel:
     def draw(self):
         self.batch.draw()
 
-    def add_base(self):
+    def add_base(self, base_point=(0, 0)):
+        base_x = base_point[0] - self.BASE_LEN // 2
+        base_y = base_point[1] - self.BASE_LEN // 2
+
         self.base = pyglet.shapes.Rectangle(
-            self.base_x, self.base_y, 
+            base_x, base_y, 
             self.BASE_LEN, self.BASE_LEN, 
             color=(123, 255, 120), batch=self.batch)
 
-    def add_joint(self):
-        if not self.links:
-            start_x = self.base_x + self.BASE_LEN // 2
-            start_y = self.base_y + self.BASE_LEN // 2
-        else:
-            if self.links[-1].end_joint:
-                raise Exception("Add joint failed - no free links available")
+        joint = Joint(base_point[0], base_point[1], self.batch)
+        self.joints.append(joint)
 
-            start_x = self.links[-1].line.x2
-            start_y = self.links[-1].line.y2
+    def add_joint(self):
+        if not self.links or self.links[-1].end_joint:
+            raise Exception("Add joint failed - no free links available")
+
+        start_x = self.links[-1].line.x2
+        start_y = self.links[-1].line.y2
 
         joint = Joint(start_x, start_y, self.batch)
 
