@@ -32,7 +32,7 @@ class Joint:
         if self.link:
             self.link.move(x, y)
 
-class Gripper(Joint):
+class EndEffector(Joint):
     def __init__(self, start_point_x, start_point_y, batch):
         super().__init__(start_point_x, start_point_y, batch)
 
@@ -56,24 +56,66 @@ class Link:
     ANGLE_VALUE_OFFSET_X = 10
     ANGLE_VALUE_OFFSET_Y = -8
 
-    def __init__(self, start_joint, end_joint, batch, length, start_angle, color):
+    def __init__(self, start_joint, end_joint, parent_link, batch, length, start_angle, color):
         self.angle_arc = None
         self.angle_arc_label = None
-        self.angle = start_angle
+        
+        self.start_joint = start_joint
+        self.end_joint = end_joint
+        self.parent_link = parent_link
+
+        # absolute (in window coordinate system)
+        self.abs_angle = start_angle 
+        # relative (in previous link coordinate system)
+        self.rel_angle = self.__relative_to_parent_angle(start_angle)     
 
         self.len = length
         self.batch = batch
 
-        self.start_joint = start_joint
-        self.end_joint = end_joint
-
         self.line = pyglet.shapes.Line(
             start_joint.shape.x, start_joint.shape.y,
-            start_joint.shape.x + length * math.cos(math.radians(start_angle)),
-            start_joint.shape.y + length * math.sin(math.radians(start_angle)),
+            start_joint.shape.x + length * math.cos(math.radians(self.rel_angle)),
+            start_joint.shape.y + length * math.sin(math.radians(self.rel_angle)),
             width=self.LINK_WIDTH, color=color, batch=batch)
 
         self.start_joint.connect_link(self)
+
+    def __relative_to_parent_angle(self, angle):
+        ''' Converting input angle to relative against parent link '''
+        return self.parent_link.rel_angle + angle if self.parent_link else angle
+
+    def __update_angle_arc(self, angle):
+        if self.angle_arc and self.angle_arc_label:
+
+            new_angle = angle % 360
+
+            # changing arc side to negative half
+            if new_angle > 180:
+                new_angle -= 360
+
+            self.angle_arc.angle = math.radians(new_angle)
+            self.angle_arc_label.text = self.ANGLE_VALUE_FMT.format(new_angle)
+
+    def __update_angle_arc_pos(self, x, y):
+        if self.angle_arc and self.angle_arc_label:
+            self.angle_arc.x = x
+            self.angle_arc.y = y
+
+            self.angle_arc.start_angle=math.radians(self.parent_link.rel_angle) if self.parent_link else 0
+
+            self.angle_arc_label.x = x + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_X
+            self.angle_arc_label.y = y + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_Y
+
+    def __update_line_end_point(self, angle):
+        ''' Updating the end point of the line based on the new angle '''
+        rad = math.radians(angle)
+        self.line.x2 = self.start_joint.shape.x + self.len * math.cos(rad)
+        self.line.y2 = self.start_joint.shape.y + self.len * math.sin(rad)
+
+    def __update_end_joint(self):
+        ''' Move end joint to the line end '''
+        if self.end_joint:
+            self.end_joint.move(self.line.x2, self.line.y2)
 
     def add_angle_arc(self):
         start_x = self.line.x
@@ -83,8 +125,8 @@ class Link:
             start_x, start_y, 
             self.ANGLE_ARC_RADIUS, 
             segments=None, 
-            angle=math.radians(self.line.rotation),
-            start_angle=0, 
+            angle=math.radians(self.abs_angle),
+            start_angle=math.radians(self.parent_link.rel_angle) if self.parent_link else 0, 
             closed=False, 
             color=(120, 120, 120, 200), 
             batch=self.batch)
@@ -100,38 +142,23 @@ class Link:
             batch=self.batch)
 
     def rotate(self, angle):
-        rad = math.radians(angle)
-        self.angle = angle
+        self.abs_angle = angle
+        self.rel_angle = self.__relative_to_parent_angle(angle)
 
-        # Update the end point of the line based on the new angle
-        self.line.x2 = self.start_joint.shape.x + self.len * math.cos(rad)
-        self.line.y2 = self.start_joint.shape.y + self.len * math.sin(rad)
-
-        if self.angle_arc and self.angle_arc_label:
-            arc_angle_value = self.angle % 360
-            self.angle_arc.angle = math.radians(arc_angle_value)
-            self.angle_arc_label.text = self.ANGLE_VALUE_FMT.format(arc_angle_value)
-
-        if self.end_joint:
-            self.end_joint.move(self.line.x2, self.line.y2)
+        self.__update_line_end_point(self.rel_angle)
+        self.__update_angle_arc(self.abs_angle)
+        self.__update_end_joint()
 
     def move(self, x, y):
         self.line.x = x
         self.line.y = y
 
-        # Update the end point
-        rad = math.radians(self.angle)
-        self.line.x2 = self.start_joint.shape.x + self.len * math.cos(rad)
-        self.line.y2 = self.start_joint.shape.y + self.len * math.sin(rad)
+        # parent_link angle was changed - recalculating relativeness
+        self.rel_angle = self.__relative_to_parent_angle(self.abs_angle)
 
-        if self.angle_arc and self.angle_arc_label:
-            self.angle_arc.x = x
-            self.angle_arc.y = y
-            self.angle_arc_label.x = x + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_X
-            self.angle_arc_label.y = y + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_Y
-
-        if self.end_joint:
-            self.end_joint.move(self.line.x2, self.line.y2)
+        self.__update_line_end_point(self.rel_angle)
+        self.__update_angle_arc_pos(x, y)
+        self.__update_end_joint()
 
 class ScaraModel:
     BASE_LEN = 20
@@ -142,7 +169,7 @@ class ScaraModel:
         self.base = None 
         self.joints = []
         self.links = []
-        self.gripper = None
+        self.end_effector = None
 
     def draw(self):
         self.batch.draw()
@@ -180,20 +207,27 @@ class ScaraModel:
         c = 20 * len(self.joints)
         color = (11 * c % 255, 123 * c % 255, 47 * c % 255)
 
-        link = Link(self.joints[-1], None, self.batch, length, start_angle, color)
+        link = Link(
+            start_joint = self.joints[-1], 
+            end_joint = None, 
+            parent_link = self.links[-1] if self.links else None,
+            batch = self.batch, 
+            length= length, 
+            start_angle = start_angle, 
+            color = color)
 
         self.links.append(link)
 
-    def add_gripper(self):
+    def add_end_effector(self):
         if not self.links or self.links[-1].end_joint:
-            raise Exception("Add gripper failed - no free links available")
+            raise Exception("Add end_effector failed - no free links available")
 
         start_x = self.links[-1].line.x2
         start_y = self.links[-1].line.y2
 
-        self.gripper = Gripper(start_x, start_y, self.batch)
+        self.end_effector = EndEffector(start_x, start_y, self.batch)
 
-        self.links[-1].end_joint = self.gripper
+        self.links[-1].end_joint = self.end_effector
 
 # TODO:
 class ScaraController:
