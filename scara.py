@@ -1,15 +1,19 @@
 import pyglet
 import math
 
-# Chained classes:
-# Joint -> Link
-# Link (->) Joint 
+# Chained objects:
+# Joint has references on connected links:
+#      [Link In]  <- (Joint) -> [Link Out]
+#
+# Link has referrences to which joints it's connected:
+#    (Start Joint) <- [Link] -> (End Joint)
 
 class Joint:
     JOINT_RADIUS = 4
 
-    def __init__(self, start_point_x, start_point_y, batch, link = None):
-        self.link = link
+    def __init__(self, start_point_x, start_point_y, link_in, link_out, batch):
+        self.link_in = link_in
+        self.link_out = link_out
 
         self.shape = pyglet.shapes.Circle(
             start_point_x, start_point_y,
@@ -18,23 +22,20 @@ class Joint:
             color=(255, 255, 255, 255), 
             batch=batch)
 
-    def connect_link(self, link):
-        self.link = link
-
     def rotate(self, angle):
-        if self.link:
-            self.link.rotate(angle)
+        if self.link_out:
+            self.link_out.rotate(angle)
 
     def move(self, x, y):
         self.shape.x = x
         self.shape.y = y
 
-        if self.link:
-            self.link.move(x, y)
+        if self.link_out:
+            self.link_out.move(x, y)
 
 class EndEffector(Joint):
     def __init__(self, start_point_x, start_point_y, batch):
-        super().__init__(start_point_x, start_point_y, batch)
+        super().__init__(start_point_x, start_point_y, None, None, batch)
 
         self.shape = pyglet.shapes.Arc(
             start_point_x, start_point_y, 
@@ -56,13 +57,13 @@ class Link:
     ANGLE_VALUE_OFFSET_X = 10
     ANGLE_VALUE_OFFSET_Y = -8
 
-    def __init__(self, start_joint, end_joint, parent_link, batch, length, start_angle, color):
+    def __init__(self, start_joint, end_joint, length, start_angle, color, batch):
         self.angle_arc = None
         self.angle_arc_label = None
         
         self.start_joint = start_joint
         self.end_joint = end_joint
-        self.parent_link = parent_link
+        self.parent_link = self.start_joint.link_in
 
         # absolute (in window coordinate system)
         self.abs_angle = start_angle 
@@ -78,7 +79,7 @@ class Link:
             start_joint.shape.y + length * math.sin(math.radians(self.rel_angle)),
             width=self.LINK_WIDTH, color=color, batch=batch)
 
-        self.start_joint.connect_link(self)
+        self.start_joint.link_out = self
 
     def __relative_to_parent_angle(self, angle):
         ''' Converting input angle to relative against parent link '''
@@ -183,7 +184,7 @@ class ScaraModel:
             self.BASE_LEN, self.BASE_LEN, 
             color=(120, 120, 120), batch=self.batch)
 
-        joint = Joint(base_point[0], base_point[1], self.batch)
+        joint = Joint(base_point[0], base_point[1], None, None, self.batch)
         self.joints.append(joint)
 
     def add_joint(self):
@@ -193,7 +194,11 @@ class ScaraModel:
         start_x = self.links[-1].line.x2
         start_y = self.links[-1].line.y2
 
-        joint = Joint(start_x, start_y, self.batch)
+        joint = Joint(
+            start_x, start_y,
+            link_in=self.links[-1] if self.links else None,
+            link_out=None,
+            batch=self.batch)
 
         if self.links:
             self.links[-1].end_joint = joint
@@ -209,12 +214,11 @@ class ScaraModel:
 
         link = Link(
             start_joint = self.joints[-1], 
-            end_joint = None, 
-            parent_link = self.links[-1] if self.links else None,
-            batch = self.batch, 
+            end_joint = None,
             length= length, 
             start_angle = start_angle, 
-            color = color)
+            color = color,
+            batch = self.batch)
 
         self.links.append(link)
 

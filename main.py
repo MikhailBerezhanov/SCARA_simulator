@@ -43,10 +43,10 @@ def update_link1(dt):
     link1_angle += 20 * dt
     link2_angle += 90 * dt
 
-    my_scara.joints[0].rotate(link1_angle)
-    # my_scara.joints[1].rotate(link2_angle)
+    my_scara.joints[0].rotate(-link1_angle)
+    my_scara.joints[1].rotate(link2_angle)
 
-    # my_scara.joints[2].rotate(-link2_angle)
+    my_scara.joints[2].rotate(-link2_angle)
 
 
 @window.event
