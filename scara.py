@@ -22,11 +22,11 @@ class Joint:
             color=(255, 255, 255, 255), 
             batch=batch)
 
-    def rotate(self, angle):
+    def rotate(self, angle: int):
         if self.link_out:
             self.link_out.rotate(angle)
 
-    def move(self, x, y):
+    def move(self, x: int, y: int):
         self.shape.x = x
         self.shape.y = y
 
@@ -34,7 +34,7 @@ class Joint:
             self.link_out.move(x, y)
 
 class EndEffector(Joint):
-    def __init__(self, start_point_x, start_point_y, batch):
+    def __init__(self, start_point_x: int, start_point_y: int, batch):
         super().__init__(start_point_x, start_point_y, None, None, batch)
 
         self.shape = pyglet.shapes.Arc(
@@ -81,11 +81,11 @@ class Link:
 
         self.start_joint.link_out = self
 
-    def __relative_to_parent_angle(self, angle):
+    def __relative_to_parent_angle(self, angle: int):
         ''' Converting input angle to relative against parent link '''
         return self.parent_link.rel_angle + angle if self.parent_link else angle
 
-    def __update_angle_arc(self, angle):
+    def __update_angle_arc(self, angle: int):
         if self.angle_arc and self.angle_arc_label:
 
             new_angle = angle % 360
@@ -97,7 +97,7 @@ class Link:
             self.angle_arc.angle = math.radians(new_angle)
             self.angle_arc_label.text = self.ANGLE_VALUE_FMT.format(new_angle)
 
-    def __update_angle_arc_pos(self, x, y):
+    def __update_angle_arc_pos(self, x: int, y: int):
         if self.angle_arc and self.angle_arc_label:
             self.angle_arc.x = x
             self.angle_arc.y = y
@@ -107,7 +107,7 @@ class Link:
             self.angle_arc_label.x = x + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_X
             self.angle_arc_label.y = y + self.ANGLE_ARC_RADIUS + self.ANGLE_VALUE_OFFSET_Y
 
-    def __update_line_end_point(self, angle):
+    def __update_line_end_point(self, angle: int):
         ''' Updating the end point of the line based on the new angle '''
         rad = math.radians(angle)
         self.line.x2 = self.start_joint.shape.x + self.len * math.cos(rad)
@@ -142,7 +142,7 @@ class Link:
             anchor_y='center',
             batch=self.batch)
 
-    def rotate(self, angle):
+    def rotate(self, angle: int):
         self.abs_angle = angle
         self.rel_angle = self.__relative_to_parent_angle(angle)
 
@@ -150,7 +150,7 @@ class Link:
         self.__update_angle_arc(self.abs_angle)
         self.__update_end_joint()
 
-    def move(self, x, y):
+    def move(self, x: int, y: int):
         self.line.x = x
         self.line.y = y
 
@@ -175,7 +175,7 @@ class ScaraModel:
     def draw(self):
         self.batch.draw()
 
-    def add_base(self, base_point=(0, 0)):
+    def add_base(self, base_point: (int, int) = (0, 0)):
         base_x = base_point[0] - self.BASE_LEN // 2
         base_y = base_point[1] - self.BASE_LEN // 2
 
@@ -205,7 +205,7 @@ class ScaraModel:
 
         self.joints.append(joint)
 
-    def add_link(self, length, start_angle = 0):
+    def add_link(self, length: int, start_angle: int = 0):
         if not self.joints:
             raise Exception("Add link failed - no joints available")
 
@@ -233,6 +233,42 @@ class ScaraModel:
 
         self.links[-1].end_joint = self.end_effector
 
+
+
+class TargetPoint:
+    def __init__(self, x: int, y: int, batch):
+        self.item = pyglet.shapes.Circle(
+            x, y,
+            1, 
+            segments=None, 
+            color=(255, 255, 255, 255), 
+            batch=batch)
+
 # TODO:
-class ScaraController:
-    pass
+class TwoJointScaraController:
+    ''' 2-DOF Scara controller. Assuming model has 2 Joints and 2 Links'''
+
+    def __init__(self, model: ScaraModel):
+        self.model = model
+
+        # self.batch = 
+
+    def inverse_kinematics(self, x: int, y: int) -> (int, int):
+        a1 = self.model.links[0].length
+        a2 = self.model.links[1].length
+
+        arg2 = (x ** 2 + y ** 2 - a1 ** 2 - a2 ** 2) / (2 * a1 * a2)
+
+        q2 = 1 / math.cos(arg)
+
+        print("q2: ", q2)
+
+
+        arg1 = a2 * math.sin(q2) / (a1 + a2 * math.cos(q2))
+        q1 = 1 / math.tan(y / x) - 1 / math.tan(arg1) 
+
+
+        print("q1: ", q1)
+
+        return (q1, q2)
+

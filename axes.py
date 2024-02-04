@@ -4,7 +4,7 @@ class Axes:
     TRANSPARENCY = 100
     ARROW_LEN = 10
 
-    def __init__(self, window, size_factor = 1.0):
+    def __init__(self, window: pyglet.window, size_factor: float = 1.0):
         self.batch = pyglet.graphics.Batch()
 
         self.origin_point_x = window.width // 2
@@ -20,13 +20,13 @@ class Axes:
         self.y_axis_arrow = None
         self.y_axis_label = None
 
-    def get_origin(self):
+    def get_origin(self) -> (int, int):
         return (self.origin_point_x, self.origin_point_y)
 
     def draw(self):
         self.batch.draw()
 
-    def create_x_axis(self, length):
+    def create_x_axis(self, length: int):
         axis_len = self.size_factor * length
 
         self.x_axis = pyglet.shapes.Line(
@@ -50,7 +50,7 @@ class Axes:
             anchor_y='center',
             batch=self.batch)
 
-    def create_y_axis(self, length):
+    def create_y_axis(self, length: int):
         axis_len = self.size_factor * length
 
         self.y_axis = pyglet.shapes.Line(
@@ -73,3 +73,7 @@ class Axes:
             anchor_x='center',
             anchor_y='center',
             batch=self.batch)
+
+# TODO:
+class Legend:
+    pass 
