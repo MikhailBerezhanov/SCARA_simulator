@@ -70,7 +70,7 @@ class Link:
         # relative (in previous link coordinate system)
         self.rel_angle = self.__relative_to_parent_angle(start_angle)     
 
-        self.len = length
+        self.length = length
         self.batch = batch
 
         self.line = pyglet.shapes.Line(
@@ -110,8 +110,8 @@ class Link:
     def __update_line_end_point(self, angle: int):
         ''' Updating the end point of the line based on the new angle '''
         rad = math.radians(angle)
-        self.line.x2 = self.start_joint.shape.x + self.len * math.cos(rad)
-        self.line.y2 = self.start_joint.shape.y + self.len * math.sin(rad)
+        self.line.x2 = self.start_joint.shape.x + self.length * math.cos(rad)
+        self.line.y2 = self.start_joint.shape.y + self.length * math.sin(rad)
 
     def __update_end_joint(self):
         ''' Move end joint to the line end '''
@@ -251,24 +251,44 @@ class TwoJointScaraController:
     def __init__(self, model: ScaraModel):
         self.model = model
 
+        self.target_point = None
+
         # self.batch = 
 
+    def add_target_point(self, origin_point, x: int, y: int):
+        # TODO: add target point
+        self.target_point = pyglet.shapes.Circle(
+            origin_point[0] + x, 
+            origin_point[1] + y,
+            2,  
+            color=(0, 0, 255, 255), 
+            batch=self.model.batch)
+
     def inverse_kinematics(self, x: int, y: int) -> (int, int):
-        a1 = self.model.links[0].length
-        a2 = self.model.links[1].length
+        L1 = self.model.links[0].length
+        L2 = self.model.links[1].length
 
-        arg2 = (x ** 2 + y ** 2 - a1 ** 2 - a2 ** 2) / (2 * a1 * a2)
+        arg2 = (x ** 2 + y ** 2 - L1 ** 2 - L2 ** 2) / (2 * L1 * L2)
 
-        q2 = 1 / math.cos(arg)
+        q2 = math.acos(arg2)
+
+        # if (x < 0):
+            # q2 *= -1
 
         print("q2: ", q2)
 
 
-        arg1 = a2 * math.sin(q2) / (a1 + a2 * math.cos(q2))
-        q1 = 1 / math.tan(y / x) - 1 / math.tan(arg1) 
+        arg1 = L2 * math.sin(q2) / (L1 + L2 * math.cos(q2))
+        q1 = math.atan(y / x) - math.atan(arg1) 
 
+
+        if (x < 0):
+            q1 += math.pi
 
         print("q1: ", q1)
 
-        return (q1, q2)
+
+        
+
+        return (math.degrees(q1), math.degrees(q2))
 

@@ -19,18 +19,33 @@ axes.create_y_axis(y_axis_length)
 # Base - Joint1 - Link1 - Joint2 - Link2 - EndEffector
 my_scara = scara.ScaraModel()
 
+origin = axes.get_origin()
+
 my_scara.add_base(axes.get_origin())
 my_scara.add_link(length = 80, start_angle = 50)
 my_scara.add_joint()
 my_scara.add_link(length = 80, start_angle = 30)
-my_scara.add_joint()
-my_scara.add_link(length = 40, start_angle = 90)
+# my_scara.add_joint()
+# my_scara.add_link(length = 40, start_angle = 90)
 
 my_scara.add_end_effector()
 
 
 for link in my_scara.links:
     link.add_angle_arc()
+
+
+controller = scara.TwoJointScaraController(my_scara)
+
+target_point_x = -100
+target_point_y = 100
+
+controller.add_target_point(axes.get_origin(), target_point_x, target_point_y)
+
+degrees = controller.inverse_kinematics(target_point_x, target_point_y)
+
+my_scara.joints[0].rotate(degrees[0])
+my_scara.joints[1].rotate(degrees[1])
 
 
 link1_angle = 0
@@ -43,7 +58,7 @@ def update_link1(dt):
     link1_angle += 20 * dt
     link2_angle += 90 * dt
 
-    my_scara.joints[0].rotate(-link1_angle)
+    # my_scara.joints[0].rotate(-link1_angle)
     # my_scara.joints[1].rotate(link2_angle)
 
     # my_scara.joints[2].rotate(-link2_angle)
