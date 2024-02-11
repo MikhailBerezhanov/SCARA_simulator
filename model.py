@@ -53,7 +53,7 @@ class EndEffector(Joint):
 class Link:
     LINK_WIDTH = 3
     ANGLE_ARC_RADIUS = 28
-    ANGLE_VALUE_FMT = "{:.0f}"
+    ANGLE_VALUE_FMT = "{:.1f}"
     ANGLE_VALUE_OFFSET_X = 10
     ANGLE_VALUE_OFFSET_Y = -8
 
@@ -244,51 +244,16 @@ class TargetPoint:
             color=(255, 255, 255, 255), 
             batch=batch)
 
-# TODO:
-class TwoJointScaraController:
-    ''' 2-DOF Scara controller. Assuming model has 2 Joints and 2 Links'''
-
-    def __init__(self, model: ScaraModel):
-        self.model = model
-
+class Trajectory:
+    def __init__(self):
+        self.batch = pyglet.graphics.Batch()
         self.target_point = None
 
-        # self.batch = 
-
     def add_target_point(self, origin_point, x: int, y: int):
-        # TODO: add target point
+
         self.target_point = pyglet.shapes.Circle(
             origin_point[0] + x, 
             origin_point[1] + y,
             2,  
             color=(0, 0, 255, 255), 
             batch=self.model.batch)
-
-    def inverse_kinematics(self, x: int, y: int) -> (int, int):
-        L1 = self.model.links[0].length
-        L2 = self.model.links[1].length
-
-        arg2 = (x ** 2 + y ** 2 - L1 ** 2 - L2 ** 2) / (2 * L1 * L2)
-
-        q2 = math.acos(arg2)
-
-        # if (x < 0):
-            # q2 *= -1
-
-        print("q2: ", q2)
-
-
-        arg1 = L2 * math.sin(q2) / (L1 + L2 * math.cos(q2))
-        q1 = math.atan(y / x) - math.atan(arg1) 
-
-
-        if (x < 0):
-            q1 += math.pi
-
-        print("q1: ", q1)
-
-
-        
-
-        return (math.degrees(q1), math.degrees(q2))
-
