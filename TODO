@@ -1,5 +1,8 @@
-1. Controls (Start, Pause)
+1. Controls (Start, Pause simulation)
 2. Legend (Target Point, Scara parts, ...)
 3. Trajectory Planer 
 4. Trajectory drawing
-5. Envelope view
+5. Envelope view (Work zone)
+6. Add dynamic size factor (zoom)
+7. Add typing for parameters
+8. Add edges for scara model

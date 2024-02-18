@@ -12,31 +12,20 @@ class TwoJointScaraController:
     def __init__(self, model: model.ScaraModel):
         self.model = model
 
-        self.target_point = None
-
-        # self.batch = 
-
-        # self.link1_start_angle = 0
-        # self.link2_start_angle = 0
-
-    def add_target_point(self, origin_point, x: int, y: int):
-        # TODO: add target point
-        self.target_point = pyglet.shapes.Circle(
-            origin_point[0] + x, 
-            origin_point[1] + y,
-            4,  
-            color=(202, 0, 220, 255), 
-            batch=self.model.batch)
-
     def inverse_kinematics(self, x: int, y: int) -> (float, float):
         L1 = self.model.links[0].length
         L2 = self.model.links[1].length
 
+        # Cosinus Theoreme
         arg2 = (x ** 2 + y ** 2 - L1 ** 2 - L2 ** 2) / (2 * L1 * L2)
-        theta2 = -math.acos(arg2)
 
-        arg1 = L2 * math.sin(theta2) / (L1 + L2 * math.cos(theta2))
-        theta1 = math.atan(y / x) - math.atan(arg1) 
+        # Choosing positive cosinus angle: 
+        # The return value lies in interval [0, pi] radians.
+        theta2 = math.acos(arg2)
+
+        beta = math.atan(L2 * math.sin(theta2) / (L1 + L2 * math.cos(theta2)))
+        gama = math.atan(y / x) # TODO: x == 0
+        theta1 = gama - beta
 
         if (x < 0):
             theta1 += math.pi
@@ -46,7 +35,7 @@ class TwoJointScaraController:
 
         return (math.degrees(theta1), math.degrees(theta2))
 
-    # constant velocity plannet
+    # constant velocity planner
     def movement_planner(self, theta1 = float, theta2 = float, dt = 0):
         q1 = deque()
         q2 = deque()
@@ -61,7 +50,7 @@ class TwoJointScaraController:
         steps_todo2 = int(abs(theta2 - link2_angle) // joint2_step)
 
         # Fill the queues
-        # TODO: determine directions
+        # TODO: determine directions or rotation
         for i in range(steps_todo1):
             link1_angle += joint1_step
             q1.append(link1_angle)
