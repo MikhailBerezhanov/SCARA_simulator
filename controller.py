@@ -3,9 +3,6 @@ import math
 
 from collections import deque
 
-#tmp
-import pyglet
-
 class TwoJointScaraController:
     ''' 2-DOF Scara controller. Assuming model has 2 Joints and 2 Links'''
 
@@ -19,9 +16,9 @@ class TwoJointScaraController:
         # Cosinus Theoreme
         arg2 = (x ** 2 + y ** 2 - L1 ** 2 - L2 ** 2) / (2 * L1 * L2)
 
-        # Choosing positive cosinus angle: 
+        # TODO: Choosing positive cosinus angle (?) 
         # The return value lies in interval [0, pi] radians.
-        theta2 = math.acos(arg2)
+        theta2 = -math.acos(arg2)
 
         beta = math.atan(L2 * math.sin(theta2) / (L1 + L2 * math.cos(theta2)))
         gama = math.atan(y / x) # TODO: x == 0
@@ -50,7 +47,7 @@ class TwoJointScaraController:
         steps_todo2 = int(abs(theta2 - link2_angle) // joint2_step)
 
         # Fill the queues
-        # TODO: determine directions or rotation
+        # TODO: determine directions of rotation
         for i in range(steps_todo1):
             link1_angle += joint1_step
             q1.append(link1_angle)
@@ -63,7 +60,6 @@ class TwoJointScaraController:
 
 
     def update(self, queue_list):
-
         q1 = queue_list[0]
         q2 = queue_list[1]
 
